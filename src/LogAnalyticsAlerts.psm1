@@ -40,7 +40,6 @@ function Get-LogAnalyticsAlertRule
         $cur_sub = (Get-AzureRmContext).Subscription.Id
         $ruleidURI = "https://management.azure.com/subscriptions/$cur_sub/providers/microsoft.insights/scheduledQueryRules" + "?api-version=2018-04-16"
         $sqrs = (Invoke-RestMethod -Method GET $ruleidURI -Headers $headers).value
-        #$sqrs | Select-Object @{Name="DisplayName";Expression={$_.properties.displayname}},@{Name="IsEnabled";Expression={$_.properties.enabled}}, @{Name="LastModified";Expression={$_.properties.lastUpdatedTime}},@{Name="Workspace";Expression={[regex]::Match($_.properties.source.dataSourceId,"(?<=\/workspaces\/)(.*)").value}},@{Name="Resource Group";Expression={[regex]::Match($_.properties.source.dataSourceId,"(?<=\/resourceGroups\/)(.*)(?=\/providers)").value}} | Format-Table
         $sqrs | Select-Object name, @{Name="DisplayName";Expression={$_.properties.displayname}},@{Name="IsEnabled";Expression={$_.properties.enabled}},@{Name="Workspace";Expression={[regex]::Match($_.properties.source.dataSourceId,"(?<=\/workspaces\/)(.*)").value}},@{Name="Resource Group";Expression={[regex]::Match($_.properties.source.dataSourceId,"(?<=\/resourceGroups\/)(.*)(?=\/providers)").value}} | Format-Table -AutoSize -Wrap
     }
 
@@ -81,6 +80,7 @@ function Enable-LogAnalyticsAlertRule
          try
             {
                 $enablerule = Invoke-RestMethod -Method PATCH -Uri $ruleUri -Headers $headers -Body $bodyEnable
+                $enablerule | Select-Object @{Name="displayName";Expression={$_.properties.displayName}}, @{Name="IsEnabled";Expression={$_.properties.enabled}},@{Name="lastUpdate";Expression={$_.properties.lastUpdatedTime}}, @{Name="provisioningState";Expression={$_.properties.provisioningState}} | Format-Table -AutoSize -Wrap
                 Write-Verbose "Output of Invoke-RestMethod: $enablerule"
             }
          catch
@@ -125,6 +125,7 @@ function Disable-LogAnalyticsAlertRule
              Write-Verbose "ResourceURI being invoked: $ruleUri"
               try {
                 $disablerule = Invoke-RestMethod -Method PATCH -Uri $ruleUri -Headers $headers -Body $bodyEnable
+                $disablerule | Select-Object @{Name="displayName";Expression={$_.properties.displayName}}, @{Name="IsEnabled";Expression={$_.properties.enabled}},@{Name="lastUpdate";Expression={$_.properties.lastUpdatedTime}}, @{Name="provisioningState";Expression={$_.properties.provisioningState}} | Format-Table -AutoSize -Wrap
                 Write-Verbose "Output of Invoke-RestMethod: $disablerule"
                  }
               catch
