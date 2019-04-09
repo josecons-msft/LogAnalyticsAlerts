@@ -14,6 +14,33 @@ function Get-AccessTokenFromContext
                 break
             }
         }
+<#
+ .Synopsis
+  Gets the Log Analytics alerts.
+
+ .Description
+  Displays a list Log Analytics alerts, based in the new Azure API, Scheduled
+  Query Rules: https://docs.microsoft.com/en-us/rest/api/monitor/scheduledqueryrules
+  This function currently does not take any parameters, so it will display all
+  the alerts for the past 24h, for the current subscription.
+
+  For further information on the new API (SQR), please review this document:
+  https://docs.microsoft.com/en-us/azure/azure-monitor/platform/alerts-log-api-switch
+
+ .Example
+   Get-LogAnalyticsAlerts
+   # This command will show all the Log Analytics alerts (Log and Metric) of the current subscription, of the last 24 hours.
+#>
+function Get-LogAnalyticsAlerts
+    {
+    param(
+         )
+        $headers = Get-AccessTokenFromContext
+        $cur_sub = (Get-AzureRmContext).Subscription.Id
+        $ruleidURI = "https://management.azure.com/subscriptions/$cur_sub/providers/Microsoft.AlertsManagement/alerts" + "?api-version=2018-05-05&targetResourceType=Microsoft.OperationalInsights/workspaces"
+        $laAlerts = (Invoke-RestMethod -Method GET $ruleidURI -Headers $headers).value
+        $laAlerts | Select-Object name,@{Name="Sev.";Expression={$_.properties.essentials.severity}}, @{Name="MonitorCondition";Expression={$_.properties.essentials.monitorCondition}}, @{Name="State";Expression={$_.properties.essentials.alertState}},@{Name="Workspace";Expression={$_.properties.essentials.targetResourceName}}, @{Name="MonitorService";Expression={$_.properties.essentials.monitorService}} ,@{Name="SignalType";Expression={$_.properties.essentials.signalType}} ,@{Name="StartTime";Expression={$_.properties.essentials.startDateTime}},@{Name="LastModifiedTime";Expression={$_.properties.essentials.lastModifiedDateTime}},@{Name="MonitorResolvedTime";Expression={$_.properties.essentials.monitorConditionResolvedDateTime}} | Format-Table -AutoSize -Wrap
+    }
 
 <#
  .Synopsis
@@ -40,6 +67,7 @@ function Get-LogAnalyticsAlertRule
         $cur_sub = (Get-AzureRmContext).Subscription.Id
         $ruleidURI = "https://management.azure.com/subscriptions/$cur_sub/providers/microsoft.insights/scheduledQueryRules" + "?api-version=2018-04-16"
         $sqrs = (Invoke-RestMethod -Method GET $ruleidURI -Headers $headers).value
+        #$sqrs | Select-Object @{Name="DisplayName";Expression={$_.properties.displayname}},@{Name="IsEnabled";Expression={$_.properties.enabled}}, @{Name="LastModified";Expression={$_.properties.lastUpdatedTime}},@{Name="Workspace";Expression={[regex]::Match($_.properties.source.dataSourceId,"(?<=\/workspaces\/)(.*)").value}},@{Name="Resource Group";Expression={[regex]::Match($_.properties.source.dataSourceId,"(?<=\/resourceGroups\/)(.*)(?=\/providers)").value}} | Format-Table
         $sqrs | Select-Object name, @{Name="DisplayName";Expression={$_.properties.displayname}},@{Name="IsEnabled";Expression={$_.properties.enabled}},@{Name="Workspace";Expression={[regex]::Match($_.properties.source.dataSourceId,"(?<=\/workspaces\/)(.*)").value}},@{Name="Resource Group";Expression={[regex]::Match($_.properties.source.dataSourceId,"(?<=\/resourceGroups\/)(.*)(?=\/providers)").value}} | Format-Table -AutoSize -Wrap
     }
 
@@ -199,6 +227,7 @@ function Enable-LogAnalyticsAlertsNewAPI
                   else {Write-Output "No changes were applied!"}
         }
 
+Export-ModuleMember -Function Get-LogAnalyticsAlerts
 Export-ModuleMember -Function Get-LogAnalyticsAlertRule
 Export-ModuleMember -Function Enable-LogAnalyticsAlertRule
 Export-ModuleMember -Function Disable-LogAnalyticsAlertRule
