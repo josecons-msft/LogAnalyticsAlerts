@@ -178,6 +178,11 @@ function Disable-LogAnalyticsAlertRule
    # This command will prompt you to switch the workspace names "joselindo" that is
    # contained on the "joseRG" resource group to use the new Azure API, Scheduled Query Rules.
    # Once prompt, you will have to type the word "YES" to confirm the switch.
+   
+   # Enable-LogAnalyticsAlertsNewAPI -WorkspaceName "joselindo" -ResourceGroupName "joseRG" -Force
+   # This command will switch the workspace names "joselindo" that is contained on the "joseRG"
+   # resource group to use the new Azure API, Scheduled Query Rules, without any user prompt.
+   # Using the -Force switch implies you have read the API switch document
 #>
 function Enable-LogAnalyticsAlertsNewAPI
         {
@@ -185,14 +190,16 @@ function Enable-LogAnalyticsAlertsNewAPI
                   [Parameter(Position=0,mandatory=$true)]
                   [string] $WorkspaceName,
                   [Parameter(Position=1,mandatory=$true)]
-                  [string] $ResourceGroupName)
+                  [string] $ResourceGroupName,
+				  [switch] $Force)
 
+				  $Readhost = "No"
                   $headers = Get-AccessTokenFromContext
                   $cur_sub = (Get-AzureRmContext).Subscription.Id
                   $workspaceURI = "https://management.azure.com/subscriptions/$cur_sub/resourceGroups/$ResourceGroupName/providers/Microsoft.OperationalInsights/workspaces/$WorkspaceName/alertsversion" + "?api-version=2017-04-26-preview"
                   Write-Verbose "WorkspaceURI being invoked: $workspaceURI"
                   <#Let's check if the new API is enabled; if so, no need to make the PATCH call#>
-                  try {
+				  try {
                     $isInabled = Invoke-RestMethod -Method GET $workspaceURI -Headers $headers
                     Write-Verbose "Output of Invoke-RestMethod: $disablerule"
                      }
@@ -206,11 +213,16 @@ function Enable-LogAnalyticsAlertsNewAPI
                     Write-Output "New SQR API is already enabled for workspace $workspaceName in resource group $ResourceGroupName"
                       break
                   }
-                  <#Informing that this is a irreversible action and that they should check the documentaiont before proceeding#>
-                  Write-Output "This is an irreversible action, so please sure you have read the following doc: https://docs.microsoft.com/en-us/azure/azure-monitor/platform/alerts-log-api-switch#process-of-switching-from-legacy-log-alerts-api"
-                  Write-Output "Please type YES to continue? (Default is NO)"
-                  $Readhost = Read-Host " ( YES / NO ) "
-                  If ( $Readhost.Trim().ToUpper() -eq "YES")
+				  <#Checking if -Force parameter was used#>
+				  	if ($Force -ne $true)
+					  {
+							<#Informing that this is a irreversible action and that they should check the documentaiont before proceeding#>
+							Write-Output "This is an irreversible action, so please sure you have read the following doc: https://docs.microsoft.com/en-us/azure/azure-monitor/platform/alerts-log-api-switch#process-of-switching-from-legacy-log-alerts-api"
+							Write-Output "Please type YES to continue? (Default is NO)"
+							$Readhost = Read-Host " ( YES / NO ) "
+					  }
+
+                  If ( ($Readhost.Trim().ToUpper() -eq "YES") -or ($Force -eq $true))
                                           {
                                              $jsonpayload =  '{"scheduledQueryRulesEnabled": true}'
                                              try {
