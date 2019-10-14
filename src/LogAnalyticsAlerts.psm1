@@ -1,7 +1,7 @@
 function Get-AccessTokenFromContext
         {
         try {
-            $accesstoken = (New-Object Microsoft.Azure.Commands.ResourceManager.Common.RMProfileClient([Microsoft.Azure.Commands.Common.Authentication.Abstractions.AzureRmProfileProvider]::Instance.Profile)).AcquireAccessToken((Get-AzureRmContext).Subscription.TenantId).AccessToken
+            $accesstoken = (New-Object Microsoft.Azure.Commands.ResourceManager.Common.RMProfileClient([Microsoft.Azure.Commands.Common.Authentication.Abstractions.AzureRmProfileProvider]::Instance.Profile)).AcquireAccessToken((Get-AzContext).Subscription.TenantId).AccessToken
             $buildheaders = @{
                 'Authorization' = "Bearer $accesstoken"
                 'Content-Type' = "application/json"
@@ -36,7 +36,7 @@ function Get-LogAnalyticsAlerts
     param(
          )
         $headers = Get-AccessTokenFromContext
-        $cur_sub = (Get-AzureRmContext).Subscription.Id
+        $cur_sub = (Get-AzContext).Subscription.Id
         $ruleidURI = "https://management.azure.com/subscriptions/$cur_sub/providers/Microsoft.AlertsManagement/alerts" + "?api-version=2018-05-05&targetResourceType=Microsoft.OperationalInsights/workspaces"
         $laAlerts = (Invoke-RestMethod -Method GET $ruleidURI -Headers $headers).value
         $laAlerts | Select-Object name,@{Name="Sev.";Expression={$_.properties.essentials.severity}}, @{Name="MonitorCondition";Expression={$_.properties.essentials.monitorCondition}}, @{Name="State";Expression={$_.properties.essentials.alertState}},@{Name="Workspace";Expression={$_.properties.essentials.targetResourceName}}, @{Name="MonitorService";Expression={$_.properties.essentials.monitorService}} ,@{Name="SignalType";Expression={$_.properties.essentials.signalType}} ,@{Name="StartTime";Expression={$_.properties.essentials.startDateTime}},@{Name="LastModifiedTime";Expression={$_.properties.essentials.lastModifiedDateTime}},@{Name="MonitorResolvedTime";Expression={$_.properties.essentials.monitorConditionResolvedDateTime}} | Format-Table -AutoSize -Wrap
@@ -64,7 +64,7 @@ function Get-LogAnalyticsAlertRule
     param(
          )
         $headers = Get-AccessTokenFromContext
-        $cur_sub = (Get-AzureRmContext).Subscription.Id
+        $cur_sub = (Get-AzContext).Subscription.Id
         $ruleidURI = "https://management.azure.com/subscriptions/$cur_sub/providers/microsoft.insights/scheduledQueryRules" + "?api-version=2018-04-16"
         $sqrs = (Invoke-RestMethod -Method GET $ruleidURI -Headers $headers).value
         #$sqrs | Select-Object @{Name="DisplayName";Expression={$_.properties.displayname}},@{Name="IsEnabled";Expression={$_.properties.enabled}}, @{Name="LastModified";Expression={$_.properties.lastUpdatedTime}},@{Name="Workspace";Expression={[regex]::Match($_.properties.source.dataSourceId,"(?<=\/workspaces\/)(.*)").value}},@{Name="Resource Group";Expression={[regex]::Match($_.properties.source.dataSourceId,"(?<=\/resourceGroups\/)(.*)(?=\/providers)").value}} | Format-Table
@@ -95,7 +95,7 @@ function Enable-LogAnalyticsAlertRule
         [string] $ResourceGroupName)
 
         $headers = Get-AccessTokenFromContext
-        $cur_sub = (Get-AzureRmContext).Subscription.Id
+        $cur_sub = (Get-AzContext).Subscription.Id
         $ruleUri = "https://management.azure.com/subscriptions/$cur_sub/resourcegroups/$resourceGroupName/providers/microsoft.insights/scheduledQueryRules/$RuleName"+"?api-version=2018-04-16"
         $bodyEnable = "
         {
@@ -141,7 +141,7 @@ function Disable-LogAnalyticsAlertRule
              [string] $ResourceGroupName)
 
              $headers = Get-AccessTokenFromContext
-             $cur_sub = (Get-AzureRmContext).Subscription.Id
+             $cur_sub = (Get-AzContext).Subscription.Id
              $ruleUri = "https://management.azure.com/subscriptions/$cur_sub/resourcegroups/$resourceGroupName/providers/microsoft.insights/scheduledQueryRules/$RuleName"+"?api-version=2018-04-16"
              $bodyEnable = "
              {
@@ -195,7 +195,7 @@ function Enable-LogAnalyticsAlertsNewAPI
 
 				  $Readhost = "No"
                   $headers = Get-AccessTokenFromContext
-                  $cur_sub = (Get-AzureRmContext).Subscription.Id
+                  $cur_sub = (Get-AzContext).Subscription.Id
                   $workspaceURI = "https://management.azure.com/subscriptions/$cur_sub/resourceGroups/$ResourceGroupName/providers/Microsoft.OperationalInsights/workspaces/$WorkspaceName/alertsversion" + "?api-version=2017-04-26-preview"
                   Write-Verbose "WorkspaceURI being invoked: $workspaceURI"
                   <#Let's check if the new API is enabled; if so, no need to make the PATCH call#>
